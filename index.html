@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Копилка добра</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --accent:#ff7847;
+    --accent-2:#ff9a56;
+    --bg:#f7f3ed;
+    --bg-2:#efe7dc;
+    --card:#ffffff;
+    --ink:#1a1613;
+    --ink-2:#5c524a;
+    --muted:#8a7e74;
+    --line:rgba(0,0,0,.07);
+    --good:#16a34a;
+    --warn:#dc2626;
+    --gold:#d97706;
+    --gem:#0ea5e9;
+    --exp:#8b5cf6;
+  }
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Inter',sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%,rgba(255,180,120,.20),transparent 60%),
+      radial-gradient(1000px 500px at 100% 100%,rgba(255,120,71,.12),transparent 60%),
+      linear-gradient(180deg,var(--bg),var(--bg-2));
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  .app{
+    display:grid;
+    grid-template-rows:auto 1fr;
+    min-height:100vh;
+  }
+
+  .topbar{
+    display:flex;align-items:center;gap:20px;
+    padding:10px 28px;
+    background:rgba(255,255,255,.78);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:100;
+  }
+  .logo{
+    font-size:18px;font-weight:800;letter-spacing:-.2px;
+    display:flex;align-items:center;gap:10px;color:var(--ink);
+  }
+  .logo .mark{
+    width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    display:flex;align-items:center;justify-content:center;font-size:17px;
+    box-shadow:0 4px 12px rgba(255,120,71,.35);
+  }
+  .nav{display:flex;gap:4px;margin-left:12px}
+  .nav a{
+    padding:7px 13px;border-radius:10px;font-size:13.5px;color:var(--ink-2);
+    text-decoration:none;font-weight:600;transition:.15s;cursor:pointer;
+  }
+  .nav a:hover{background:rgba(255,180,130,.15);color:var(--ink)}
+  .header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  
+  .badge{
+    padding:6px 12px;border-radius:11px;
+    font-weight:700;font-size:13px;
+    display:flex;align-items:center;gap:6px;transition:.3s;
+  }
+  .badge.exp{
+    background:linear-gradient(135deg,#f3e8ff,#e9d5ff);
+    border:1px solid rgba(139,92,246,.3);
+    color:var(--exp);
+  }
+  .badge.gems{
+    background:linear-gradient(135deg,#e0f2fe,#bae6fd);
+    border:1px solid rgba(14,165,233,.3);
+    color:var(--gem);
+  }
+
+  .user-chip{
+    display:flex;align-items:center;gap:9px;
+    padding:5px 12px 5px 5px;border-radius:40px;
+    background:#fff;border:1px solid var(--line);margin-left:4px;
+    cursor:pointer;transition:.2s;
+  }
+  .user-chip:hover{border-color:var(--accent-2);background:#fff9f4}
+  .user-chip .av{
+    width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(135deg,#ffd9c0,#ff9a56);
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+  }
+  .user-chip .name{font-size:12.5px;font-weight:700}
+  .user-chip .sub{font-size:10.5px;color:var(--muted)}
+
+  .container{
+    display:grid;
+    grid-template-columns:340px minmax(380px,1fr) 320px;
+    gap:18px;
+    padding:14px 28px 24px;
+    max-width:1680px;
+    width:100%;
+    margin:0 auto;
+    align-items:start;
+  }
+
+  .sidebar-left,.sidebar-right{
+    display:flex;flex-direction:column;gap:10px;
+    position:sticky;top:66px;
+    max-height:calc(100vh - 76px);
+    overflow-y:auto;
+    padding-right:4px;
+    padding-bottom:8px;
+  }
+  .sidebar-left::-webkit-scrollbar,
+  .sidebar-right::-webkit-scrollbar{width:5px}
+  .sidebar-left::-webkit-scrollbar-thumb,
+  .sidebar-right::-webkit-scrollbar-thumb{background:#ffcdb2;border-radius:3px}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 14px;
+    box-shadow:0 4px 16px rgba(180,100,50,.06);
+  }
+  .card h3{
+    font-size:11px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--muted);font-weight:700;margin-bottom:8px;
+    display:flex;align-items:center;gap:6px;
+  }
+
+  /* ─── Карточка питомца ─── */
+  .pet-card{
+    background:radial-gradient(120% 80% at 50% 0%,#fff6ec 0%,#ffffff 65%);
+    position:relative;
+    transition:background 0.5s ease;
+    padding:10px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .pet-card.is-sad{
+    background:radial-gradient(120% 80% at 50% 0%,#f0f0f0 0%,#ffffff 65%);
+    border-color:#dcdcdc;
+  }
+  .pet-head{
+    display:flex;align-items:center;justify-content:space-between;gap:6px;
+  }
+  .pet-info .pet-name{font-size:14px;font-weight:800;letter-spacing:-.2px;display:flex;align-items:center;gap:6px}
+  .pet-info .pet-stage{font-size:11px;color:var(--accent);font-weight:700;margin-top:1px}
+  .pet-head-btns{display:flex;gap:4px}
+  .edit-pet-btn{
+    padding:4px 7px;border-radius:8px;border:1px solid var(--line);
+    background:#fff;font-size:10.5px;font-weight:600;color:var(--ink-2);
+    cursor:pointer;transition:.15s;
+  }
+  .edit-pet-btn:hover{border-color:var(--accent);color:var(--accent);background:#fff9f4}
+
+  .pet-canvas-wrap{
+    position:relative;
+    width:100%;
+    height:clamp(130px, 20vh, 180px);
+    border-radius:14px;
+    background:radial-gradient(circle at 50% 35%, #fff8f0 0%, #fde6d2 100%);
+    border:1px solid rgba(255,154,86,.22);
+    overflow:hidden;
+    cursor:grab;
+    user-select:none;
+  }
+  .pet-canvas-wrap:active{cursor:grabbing}
+  .pet-card.is-sad .pet-canvas-wrap{
+    background:radial-gradient(circle at 50% 35%, #f3f4f6 0%, #e5e7eb 100%);
+    border-color:#d1d5db;
+  }
+  #pet-canvas{
+    width:100%;height:100%;display:block;
+  }
+  .emotion-badge{
+    position:absolute;top:6px;left:8px;
+    font-size:10.5px;font-weight:700;color:var(--ink);
+    background:rgba(255,255,255,.85);padding:3px 8px;border-radius:8px;
+    box-shadow:0 2px 6px rgba(0,0,0,.06);
+    pointer-events:none;
+  }
+
+  .level-progress{
+    background:#fff;
+    padding:5px 8px;
+    border-radius:9px;
+    border:1px solid var(--line);
+  }
+  .level-progress .labels{
+    display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:700;
+  }
+  .level-progress .bar{
+    height:5px;background:#f0e8de;border-radius:4px;overflow:hidden;
+  }
+  .level-progress .bar span{
+    display:block;height:100%;background:linear-gradient(90deg,#a78bfa,#8b5cf6);border-radius:4px;transition:width 0.5s ease;
+  }
+
+  .pet-mood{
+    font-size:11px;color:var(--ink-2);
+    padding:5px 8px;background:#fff7ec;border-radius:8px;
+    border-left:2.5px solid var(--accent-2);font-style:italic;line-height:1.25;
+  }
+  .pet-card.is-sad .pet-mood{
+    background:#fee2e2;border-left-color:var(--warn);color:var(--warn);font-weight:600;
+  }
+
+  .pet-stats-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  }
+  .pet-stat{
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px 7px;
+    font-size:10.5px;
+  }
+  .pet-stat-top{display:flex;justify-content:space-between;margin-bottom:3px;font-weight:700}
+  .pet-stat .lbl{color:var(--muted)}
+  .pet-stat .val{color:var(--ink)}
+  .pet-stat .bar{
+    height:5px;background:#f0e8de;border-radius:5px;overflow:hidden;
+  }
+  .pet-stat .bar span{
+    display:block;height:100%;border-radius:5px;
+    background:linear-gradient(90deg,#ffb380,#ff7847);
+    transition:width .4s ease;
+  }
+  .pet-stat .bar.joy span{background:linear-gradient(90deg,#fcd34d,#f59e0b)}
+
+  .pet-controls-sticky{
+    position:sticky;
+    bottom:0;
+    background:rgba(255,255,255,.95);
+    backdrop-filter:blur(8px);
+    padding-top:4px;
+    z-index:5;
+  }
+  .pet-actions{display:flex;gap:6px}
+  .pet-actions button{
+    flex:1;padding:6px 4px;border-radius:9px;
+    border:1.5px solid var(--accent-2);
+    background:#fff;font-family:inherit;font-size:11px;font-weight:700;
+    color:var(--ink);cursor:pointer;transition:.15s;
+    box-shadow:0 2px 4px rgba(255,120,71,.08);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  }
+  .pet-actions button:hover{
+    border-color:var(--accent);color:var(--accent);
+    background:#fff9f4;transform:translateY(-1px);
+  }
+  .pet-actions button span{font-size:9px;font-weight:600;color:var(--muted)}
+
+  .dev-stage-btn{
+    width:100%;padding:6px;margin-top:5px;
+    background:linear-gradient(135deg,#f3e8ff,#e9d5ff);
+    border:1.5px solid rgba(139,92,246,.45);
+    color:var(--exp);border-radius:9px;font-weight:700;
+    cursor:pointer;transition:.15s;font-family:inherit;font-size:10.5px;
+    display:flex;align-items:center;justify-content:center;gap:4px;
+  }
+  .dev-stage-btn:hover{background:#e9d5ff;transform:translateY(-1px)}
+
+  .skip-day-btn{
+    width:100%;padding:6px;margin-top:5px;
+    background:#fef2f2;border:1.5px dashed var(--warn);
+    color:var(--warn);border-radius:9px;font-weight:700;
+    cursor:pointer;transition:.15s;font-family:inherit;font-size:10.5px;
+    display:flex;align-items:center;justify-content:center;gap:4px;
+  }
+  .skip-day-btn:hover{background:#fee2e2}
+
+  .stat-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:5px 0;font-size:12px;border-bottom:1px dashed rgba(255,180,130,.3);
+  }
+  .stat-row:last-child{border:none;padding-bottom:0}
+  .stat-row .k{color:var(--muted);display:flex;align-items:center;gap:6px;font-size:11.5px}
+  .stat-row .v{font-weight:700}
+  .progress{
+    margin-top:7px;padding-top:7px;border-top:1px solid var(--line);
+  }
+  .progress .bar{
+    height:5px;background:#f0e8de;border-radius:5px;overflow:hidden;margin:4px 0;
+  }
+  .progress .bar span{
+    display:block;height:100%;border-radius:5px;
+    background:linear-gradient(90deg,var(--accent-2),var(--accent));
+    transition:width .6s ease;
+  }
+  .progress .hint{font-size:10.5px;color:var(--muted);text-align:center}
+
+  .top-row{
+    display:flex;align-items:center;gap:8px;padding:6px 8px;
+    border-radius:9px;font-size:12.5px;margin-bottom:3px;
+  }
+  .top-row.current{
+    background:linear-gradient(135deg,#fff3e0,#ffe4cc);
+    border:1px solid #ffb380;font-weight:700;
+  }
+  .top-row .pos{font-size:11px;font-weight:700;color:var(--muted);min-width:18px}
+  .top-row .av{
+    width:24px;height:24px;border-radius:50%;
+    background:linear-gradient(135deg,#fff2e2,#ffd9c0);
+    display:flex;align-items:center;justify-content:center;font-size:12px;
+  }
+  .top-row .name{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .top-row .pts{font-weight:700;color:var(--exp)}
+  
+  .friend-add-box{
+    display:flex;gap:5px;margin-top:8px;
+  }
+  .friend-add-box input{
+    flex:1;padding:7px 9px;border-radius:8px;border:1px solid var(--line);
+    font-size:12px;font-family:inherit;outline:none;
+  }
+  .friend-add-box input:focus{border-color:var(--accent)}
+  .add-friend-btn{
+    padding:7px 11px;
+    background:#fff9f4;border:1px solid var(--accent);
+    color:var(--accent);border-radius:8px;font-weight:700;
+    cursor:pointer;transition:.2s;font-family:inherit;font-size:11.5px;
+    white-space:nowrap;
+  }
+  .add-friend-btn:hover{background:#fff0e5}
+
+  .pot-card{
+    background:linear-gradient(135deg,#fdf4ff,#fae8ff);
+    border-color:rgba(217,70,239,.2);text-align:center;
+  }
+  .pot-card .big{
+    font-size:26px;font-weight:800;color:#c026d3;letter-spacing:-1px;
+  }
+  .pot-card .small{font-size:11px;color:#a16207;margin-top:2px;opacity:.85}
+
+  .main{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:0 12px 40px rgba(180,100,50,.10);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    height:calc(100vh - 86px);
+  }
+  .chat-header{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 20px;
+    background:linear-gradient(135deg,rgba(255,180,130,.10),rgba(255,120,71,.05));
+    border-bottom:1px solid var(--line);
+  }
+  .chat-header .bot-av{
+    width:40px;height:40px;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    display:flex;align-items:center;justify-content:center;font-size:20px;
+    box-shadow:0 6px 14px rgba(255,120,71,.35);
+  }
+  .chat-header .bot-meta .n{font-size:15px;font-weight:800}
+
+  .chat{
+    flex:1;overflow-y:auto;padding:20px;
+    display:flex;flex-direction:column;gap:12px;
+    scroll-behavior:smooth;
+  }
+  .chat::-webkit-scrollbar{width:7px}
+  .chat::-webkit-scrollbar-thumb{background:#ffcdb2;border-radius:4px}
+
+  .bubble{
+    max-width:88%;align-self:flex-start;
+    background:#fff;border:1px solid var(--line);
+    border-radius:16px 16px 16px 6px;
+    padding:14px 16px;font-size:14px;line-height:1.5;color:var(--ink);
+    box-shadow:0 2px 10px rgba(180,100,50,.06);
+    animation:slideIn .28s ease-out;
+  }
+  @keyframes slideIn{
+    from{opacity:0;transform:translateY(6px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .bubble .card{
+    background:linear-gradient(135deg,#fff9f4,#fff2e8);
+    border-radius:12px;padding:12px 14px;margin:8px 0;
+    border:1px solid rgba(255,180,130,.20);
+    border-left:3px solid var(--accent-2);
+  }
+  .bubble .card:first-child{margin-top:0}
+  .bubble .card:last-child{margin-bottom:0}
+  .bubble .card.success{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-left-color:#22c55e;border-color:rgba(34,197,94,.2)}
+  .bubble .card.warning{background:linear-gradient(135deg,#fef2f2,#fee2e2);border-left-color:#ef4444;border-color:rgba(239,68,68,.2)}
+  .bubble h2{
+    font-size:15.5px;font-weight:800;letter-spacing:-.2px;margin-bottom:3px;
+    color:var(--gold);
+  }
+  .bubble .card.success h2{color:var(--good)}
+  .bubble .card.warning h2{color:var(--warn)}
+  .bubble .subtitle{font-size:12.5px;color:var(--ink-2);opacity:.85}
+  .bubble .label{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;
+    color:var(--muted);font-weight:700;margin-bottom:6px;
+  }
+  .bubble .stat{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
+  .bubble .stat .k{color:var(--muted)}
+  .bubble .stat .v{font-weight:700;color:var(--ink)}
+  .bubble .title{font-weight:700;font-size:14.5px;margin:4px 0;color:var(--ink);line-height:1.4}
+  .bubble .meta{font-size:12.5px;color:var(--muted);margin:3px 0}
+  .bubble .reward{font-size:13.5px;font-weight:700;color:var(--good);margin:3px 0}
+  .bubble .centered{text-align:center;padding:5px 0;line-height:1.5}
+  .bubble .icon-big{font-size:34px;text-align:center;margin:4px 0}
+  .bubble .divider{
+    height:1px;background:linear-gradient(90deg,transparent,#ffcdb2,transparent);
+    margin:10px 0;
+  }
+  .bubble .quote{
+    font-style:italic;color:#92400e;border-left:3px solid var(--accent-2);
+    padding:8px 12px;margin:10px 0 0;background:#fff9f4;border-radius:0 9px 9px 0;
+    font-size:13px;line-height:1.45;
+  }
+
+  .proof-box{
+    margin-top:10px;padding:10px 12px;border-radius:11px;
+    border:1.5px dashed var(--accent);background:#fff9f4;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .proof-box .proof-lbl{
+    font-size:12px;font-weight:700;color:var(--ink);
+  }
+  .proof-box .proof-lbl span{color:var(--warn)}
+  .wip-banner{
+    display:none;
+    padding:8px 10px;border-radius:8px;
+    background:#fef3c7;border:1px solid #f59e0b;
+    color:#92400e;font-size:12.5px;font-weight:700;
+    align-items:center;gap:6px;
+    animation:slideIn .2s ease-out;
+  }
+  .wip-banner.show{display:flex}
+
+  .deed-row{
+    display:flex;align-items:center;gap:10px;padding:7px 0;
+    font-size:13px;border-bottom:1px dashed rgba(255,180,130,.3);
+  }
+  .deed-row:last-child{border:none}
+  .deed-row .i{font-size:17px}
+  .deed-row .n{flex:1;color:var(--ink)}
+  .deed-row .c{
+    font-size:11px;color:#a16207;background:#fef3e2;
+    padding:2px 8px;border-radius:10px;white-space:nowrap;
+  }
+
+  .product-row{
+    display:flex;align-items:center;gap:11px;padding:10px 12px;margin:6px 0;
+    background:linear-gradient(135deg,#fff9f4,#fff2e8);
+    border-radius:11px;border:1px solid rgba(255,180,130,.25);
+  }
+  .product-row .i{font-size:24px}
+  .product-row .info{flex:1}
+  .product-row .nm{font-weight:700;font-size:13px;color:var(--ink)}
+  .product-row .ef{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .product-row .p{
+    font-weight:800;color:var(--gem);font-size:13px;
+    background:#e0f2fe;padding:4px 10px;border-radius:9px;white-space:nowrap;
+  }
+  .product-row .owned{
+    font-weight:700;color:var(--good);font-size:12px;
+    background:#dcfce7;padding:4px 10px;border-radius:9px;white-space:nowrap;
+  }
+  .product-row .unequipped{
+    font-weight:700;color:var(--ink-2);font-size:12px;
+    background:#f3f4f6;padding:4px 10px;border-radius:9px;white-space:nowrap;
+  }
+
+  .actions{
+    align-self:flex-start;
+    display:flex;flex-direction:column;gap:7px;
+    max-width:88%;width:100%;
+    animation:slideIn .32s ease-out .05s both;
+  }
+  .btn{
+    padding:11px 15px;border:none;border-radius:12px;
+    font-family:inherit;font-size:13.5px;font-weight:600;
+    cursor:pointer;text-align:left;transition:.15s;
+    background:#fff;color:var(--ink);
+    border:1px solid var(--line);
+    box-shadow:0 2px 6px rgba(180,100,50,.06);
+    display:flex;align-items:center;gap:8px;
+  }
+  .btn:hover{
+    transform:translateY(-1px);border-color:var(--accent-2);
+    background:#fff9f4;
+    box-shadow:0 6px 16px rgba(255,120,71,.15);
+  }
+  .btn.primary{
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    color:#fff;border:none;
+    box-shadow:0 6px 18px rgba(255,120,71,.35);
+  }
+  .btn.primary:hover{
+    background:linear-gradient(135deg,#ffa96a,#ff8b5a);
+  }
+  .btn.proof{
+    background:#fff7ed;color:#c2410c;
+    border:1.5px dashed #fb923c;
+  }
+  .btn.proof:hover{background:#ffedd5}
+  .btn.ghost{
+    background:transparent;color:#a16207;
+    border:1px dashed rgba(255,180,130,.5);box-shadow:none;
+    justify-content:center;
+  }
+  .btn.ghost:hover{background:#fff9f4;border-style:solid}
+
+  /* ─── Модальное окно старта и выбора питомца ─── */
+  .modal-backdrop{
+    position:fixed;inset:0;z-index:2000;
+    background:rgba(26,22,19,.55);
+    backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .modal-backdrop.hidden{display:none}
+  .modal-box{
+    background:#fff;border-radius:24px;
+    max-width:520px;width:100%;
+    padding:26px 28px;
+    box-shadow:0 24px 60px rgba(0,0,0,.25);
+    border:1px solid var(--line);
+    animation:slideIn .25s ease-out;
+  }
+  .modal-box h2{font-size:21px;font-weight:800;margin-bottom:4px;color:var(--ink)}
+  .modal-box p.sub{font-size:13.5px;color:var(--muted);margin-bottom:18px}
+  .form-group{margin-bottom:14px}
+  .form-group label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .form-group input{
+    width:100%;padding:11px 14px;border-radius:12px;
+    border:1.5px solid var(--line);font-size:14px;font-family:inherit;outline:none;transition:.15s;
+  }
+  .form-group input:focus{border-color:var(--accent);background:#fffdf9}
+  .species-grid{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+  }
+  .species-btn{
+    padding:10px 6px;border-radius:13px;border:2px solid var(--line);
+    background:#fff;cursor:pointer;transition:.15s;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    font-family:inherit;
+  }
+  .species-btn .sp-ic{font-size:26px}
+  .species-btn .sp-nm{font-size:11.5px;font-weight:700;color:var(--ink)}
+  .species-btn:hover{border-color:var(--accent-2);background:#fff9f4}
+  .species-btn.active{
+    border-color:var(--accent);background:#fff3e6;
+    box-shadow:0 4px 12px rgba(255,120,71,.2);
+  }
+  .modal-submit{
+    width:100%;padding:13px;margin-top:8px;border:none;border-radius:14px;
+    background:linear-gradient(135deg,var(--accent-2),var(--accent));
+    color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+    box-shadow:0 8px 20px rgba(255,120,71,.35);transition:.15s;
+  }
+  .modal-submit:hover{transform:translateY(-1px)}
+
+  /* Адаптивность для планшетов и телефонов */
+  @media (max-width: 1080px) {
+    .container {
+      grid-template-columns: 1fr;
+      padding: 12px 14px 24px;
+    }
+    .sidebar-left, .sidebar-right {
+      position: static;
+      max-height: none;
+      overflow: visible;
+      padding-right: 0;
+    }
+    .main {
+      height: auto;
+      min-height: 520px;
+    }
+    .topbar {
+      padding: 10px 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .nav {
+      order: 3;
+      width: 100%;
+      margin-left: 0;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .header-right {
+      margin-left: auto;
+    }
+  }
+
+  @media (max-width: 540px) {
+    .species-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .modal-box {
+      padding: 18px 16px;
+    }
+    .user-chip .sub {
+      display: none;
+    }
+    .bubble, .actions {
+      max-width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Модальное окно выбора имени и питомца -->
+<div class="modal-backdrop" id="setup-modal">
+  <div class="modal-box">
+    <h2>🧡 Добро пожаловать в «Копилку добра»!</h2>
+    <p class="sub">Представься и выбери своего питомца. Сначала он будет в яичке, а твои добрые дела помогут ему вылупиться и вырасти!</p>
+
+    <div class="form-group">
+      <label>Твоё имя</label>
+      <input type="text" id="input-user-name" value="Иван" placeholder="Введи своё имя..." maxlength="24">
+    </div>
+
+    <div class="form-group">
+      <label>Кто внутри яичка?</label>
+      <div class="species-grid" id="species-grid">
+        <button type="button" class="species-btn active" data-species="cat" onclick="selectSpecies('cat')">
+          <span class="sp-ic">🐱</span><span class="sp-nm">Кот</span>
+        </button>
+        <button type="button" class="species-btn" data-species="dog" onclick="selectSpecies('dog')">
+          <span class="sp-ic">🐶</span><span class="sp-nm">Пёс</span>
+        </button>
+        <button type="button" class="species-btn" data-species="fox" onclick="selectSpecies('fox')">
+          <span class="sp-ic">🦊</span><span class="sp-nm">Лис</span>
+        </button>
+        <button type="button" class="species-btn" data-species="bunny" onclick="selectSpecies('bunny')">
+          <span class="sp-ic">🐰</span><span class="sp-nm">Кролик</span>
+        </button>
+        <button type="button" class="species-btn" data-species="panda" onclick="selectSpecies('panda')">
+          <span class="sp-ic">🐼</span><span class="sp-nm">Панда</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Имя питомца</label>
+      <input type="text" id="input-pet-name" value="Мурзик" placeholder="Придумай кличку..." maxlength="20">
+    </div>
+
+    <button class="modal-submit" onclick="saveSetup()">✨ Начать творить добро</button>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="logo">
+      <span class="mark">🧡</span>
+      <span>Копилка добра</span>
+    </div>
+    <nav class="nav">
+      <a onclick="go('start')">Главная</a>
+      <a onclick="go('shop')">Магазин</a>
+      <a onclick="go('wardrobe')">Гардероб</a>
+      <a onclick="go('ranks')">Ранги</a>
+      <a onclick="go('about')">О проекте</a>
+    </nav>
+    <div class="header-right">
+      <div class="badge exp" id="exp-badge">⭐ 10 EXP</div>
+      <div class="badge gems" id="gems-badge">💎 50</div>
+      <div class="user-chip" onclick="openSetupModal()" title="Изменить имя или питомца">
+        <div class="av" id="user-av">🐱</div>
+        <div>
+          <div class="name" id="user-name">Иван</div>
+          <div class="sub" id="user-rank">🚪 Придержал дверь в метро</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <aside class="sidebar-left">
+      <div class="card pet-card" id="pet-card">
+        <div class="pet-head">
+          <div class="pet-info">
+            <div class="pet-name">
+              <span id="pet-name">Мурзик</span>
+            </div>
+            <div class="pet-stage" id="pet-stage">Уровень 1 · 🥚 В яичке</div>
+          </div>
+          <div class="pet-head-btns">
+            <button class="edit-pet-btn" onclick="go('wardrobe')">🧥 Гардероб</button>
+            <button class="edit-pet-btn" onclick="openSetupModal()">✏️ Сменить</button>
+          </div>
+        </div>
+
+        <div class="pet-canvas-wrap" id="pet-canvas-wrap">
+          <canvas id="pet-canvas"></canvas>
+          <div class="emotion-badge" id="emotion-badge">🥚 Тёплое яичко</div>
+        </div>
+
+        <div class="level-progress">
+          <div class="labels">
+            <span>Стадия роста <span id="lvl-text">1 / 5</span></span>
+            <span id="lvl-exp-text">10 / 30 EXP</span>
+          </div>
+          <div class="bar"><span id="lvl-progress-bar" style="width: 33%"></span></div>
+        </div>
+
+        <div class="pet-mood" id="pet-mood">Покачивается в тёплом гнезде и ждёт вылупления</div>
+        
+        <div class="pet-stats-grid">
+          <div class="pet-stat">
+            <div class="pet-stat-top">
+              <span class="lbl">🍪 Сытость</span>
+              <span class="val" id="pet-hunger-v">60%</span>
+            </div>
+            <div class="bar"><span id="pet-hunger" style="width:60%"></span></div>
+          </div>
+          <div class="pet-stat">
+            <div class="pet-stat-top">
+              <span class="lbl">💛 Радость</span>
+              <span class="val" id="pet-joy-v">60%</span>
+            </div>
+            <div class="bar joy"><span id="pet-joy" style="width:60%"></span></div>
+          </div>
+        </div>
+        
+        <div class="pet-controls-sticky">
+          <div class="pet-actions">
+            <button onclick="petPet()">
+              🤚 Погладить
+              <span>+8 Радости</span>
+            </button>
+            <button onclick="petFeed()">
+              🍪 Покормить
+              <span>💎 10 (+15 Сытости)</span>
+            </button>
+          </div>
+          <button class="dev-stage-btn" onclick="upgradeStageFast()">⚡ Прокачать стадию (Тест)</button>
+          <button class="skip-day-btn" onclick="skipDay()">⏳ Пропустить день (сжечь стрик)</button>
+        </div>
+      </div>
+
+      <!-- Профиль -->
+      <div class="card">
+        <h3>👤 Профиль</h3>
+        <div class="stat-row"><span class="k">⭐ Опыт</span><span class="v" id="stat-exp">10</span></div>
+        <div class="stat-row"><span class="k">💎 Алмазы</span><span class="v" id="stat-gems">50</span></div>
+        <div class="stat-row"><span class="k">🏷️ Ранг</span><span class="v" id="stat-rank" style="font-size:11.5px;text-align:right">🚪 Придержал дверь в метро</span></div>
+        <div class="stat-row"><span class="k">🔥 Серия заходов</span><span class="v" id="stat-streak">1 дн.</span></div>
+        <div class="progress">
+          <div class="label" style="font-size:9.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;text-transform:uppercase">До нового ранга</div>
+          <div class="bar"><span id="progress-fill" style="width:20%"></span></div>
+          <div class="hint" id="progress-hint">10 / 50 EXP — осталось 40</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="chat-header">
+        <div class="bot-av">🧡</div>
+        <div class="bot-meta">
+          <div class="n">Копилка добра</div>
+        </div>
+      </div>
+      <div class="chat" id="chat"></div>
+    </main>
+
+    <aside class="sidebar-right">
+      <div class="card pot-card">
+        <h3 style="justify-content:center;color:#c026d3">🌍 Общая копилка</h3>
+        <div class="big" id="pot-num">540</div>
+        <div class="small">добрых дел сделано вместе</div>
+      </div>
+
+      <div class="card">
+        <h3>👥 Мои друзья</h3>
+        <div id="friends-list"></div>
+        <div class="friend-add-box">
+          <input type="text" id="custom-friend-name" placeholder="Введи имя друга..." maxlength="20" onkeydown="if(event.key==='Enter')addFriend()">
+          <button class="add-friend-btn" onclick="addFriend()">➕ Добавить</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const ranks = [
+  {min:0,    max:49,    icon:"🚪", title:"Придержал дверь в метро"},
+  {min:50,   max:149,   icon:"☕", title:"Заварил близким тёплый чай"},
+  {min:150,  max:299,   icon:"🗑️", title:"Вынес мусор без напоминания"},
+  {min:300,  max:499,   icon:"🛍️", title:"Помог донести тяжёлые сумки"},
+  {min:500,  max:799,   icon:"🐈", title:"Накормил бездомного кота"},
+  {min:800,  max:1199,  icon:"📚", title:"Помог однокласснику с учёбой"},
+  {min:1200, max:1699,  icon:"🌱", title:"Высадил цветы у дома"},
+  {min:1700, max:2299,  icon:"🤝", title:"Надёжный помощник соседей"},
+  {min:2300, max:2999,  icon:"🏡", title:"Организатор субботника во дворе"},
+  {min:3000, max:3999,  icon:"🎗️", title:"Активный волонтёр школы"},
+  {min:4000, max:5499,  icon:"🌟", title:"Добрая душа района"},
+  {min:5500, max:99999, icon:"❤️", title:"Почётный хранитель добра"}
+];
+
+const speciesMeta = {
+  cat:   { icon:"🐱", label:"Кот",    defaultName:"Мурзик", primary:0xff9a56, limbColor:0xff9a56, earInner:0xffb6c1, nose:0xd97706 },
+  dog:   { icon:"🐶", label:"Пёс",    defaultName:"Барбос", primary:0xc68642, limbColor:0xc68642, earInner:0x8d5524, nose:0x2b2118 },
+  fox:   { icon:"🦊", label:"Лис",    defaultName:"Фырк",   primary:0xea580c, limbColor:0xea580c, earInner:0x27272a, nose:0x18181b },
+  bunny: { icon:"🐰", label:"Кролик", defaultName:"Пушок",  primary:0xf8fafc, limbColor:0xf8fafc, earInner:0xf9a8d4, nose:0xf472b6 },
+  panda: { icon:"🐼", label:"Панда",  defaultName:"Бамбук", primary:0xffffff, limbColor:0x1f2937, earInner:0x111827, nose:0x111827 }
+};
+
+const petStages = [
+  { min: 0,   stage: 1, title: "🥚 В яичке",              scale: 1.0,  isEgg: true },
+  { min: 30,  stage: 2, title: "🐣 Вылупился · Малыш",    scale: 0.68, isEgg: false },
+  { min: 70,  stage: 3, title: "🌱 Подросток",            scale: 0.86, isEgg: false },
+  { min: 130, stage: 4, title: "🌟 Взрослый питомец",     scale: 1.06, isEgg: false },
+  { min: 210, stage: 5, title: "👑 Могучий Хранитель",    scale: 1.24, isEgg: false, hasHaloRing: true }
+];
+
+const questsPool = [
+  { icon:"📞", title:"Позвони бабушке или дедушке и спроси о самочувствии", category:"👨‍👩‍👧 Семья", quote:"Маленький звонок — большая теплота." },
+  { icon:"🧹", title:"Собери мусор во дворе или ближайшем парке", category:"🌿 Экология и двор", quote:"Чистый двор — это забота о каждом соседе." },
+  { icon:"🚪", title:"Придержи дверь в подъезде, школе или магазине для идущего сзади", category:"🤝 Вежливость", quote:"Секунда внимания поднимает настроение на весь день." },
+  { icon:"🐈", title:"Насыпь корм или налей чистой воды бездомному животному", category:"🐾 Забота о животных", quote:"Для нас это мелочь, а для них — целая жизнь." },
+  { icon:"🛍️", title:"Помоги родителям или пожилому соседу донести тяжёлые сумки", category:"🏡 Помощь рядом", quote:"Тяжёлая ноша становится легче, когда несёшь её вместе." },
+  { icon:"🍽️", title:"Помой посуду за всей семьёй без напоминаний", category:"👨‍👩‍👧 Семья", quote:"Неожиданная помощь дома радует сильнее любых подарков." },
+  { icon:"📚", title:"Помоги однокласснику разобраться со сложной темой или домашкой", category:"🎓 Учёба и дружба", quote:"Делясь знаниями, ты сам понимаешь предмет ещё лучше." },
+  { icon:"🐦", title:"Насыпь семечек или крупы в кормушку для птиц", category:"🐾 Забота о животных", quote:"Пернатые друзья обязательно скажут тебе спасибо." },
+  { icon:"💌", title:"Напиши тёплое сообщение другу, с которым давно не общался", category:"💬 Дружба", quote:"Иногда одно «Как ты?» способно спасти чей-то день." },
+  { icon:"🌱", title:"Полей все домашние цветы или растения в классе", category:"🌿 Экология и уют", quote:"Зелёный уголок живёт благодаря твоей заботе." },
+  { icon:"🧸", title:"Отложи хорошие вещи или книги, чтобы отдать тем, кому они нужнее", category:"🎁 Благотворительность", quote:"Вещи обретают вторую жизнь, когда приносят радость другим." },
+  { icon:"☕", title:"Завари вкусный чай для мамы, папы или близкого человека", category:"👨‍👩‍👧 Семья", quote:"Чашка тёплого чая согревает не только руки, но и душу." },
+  { icon:"🚌", title:"Уступи место в общественном транспорте пожилому человеку", category:"🤝 Вежливость", quote:"Уважение к старшим начинается с простых поступков." },
+  { icon:"🔋", title:"Собери старые батарейки дома и сдай их в пункт приёма", category:"🌿 Экология", quote:"Одна сданная батарейка спасает десятки литров чистой воды." },
+  { icon:"😊", title:"Искренне поблагодари учителя, продавца или водителя за их труд", category:"☀️ Доброе слово", quote:"Улыбка и «спасибо» возвращаются бумерангом." },
+  { icon:"🧹", title:"Наведи порядок на своём рабочем столе и в общей комнате", category:"🏡 Дом и уют", quote:"Порядок вокруг помогает навести порядок в мыслях." },
+  { icon:"🐶", title:"Погуляй с домашним питомцем подольше и поиграй с ним", category:"🐾 Забота о животных", quote:"Для питомца ты — весь его мир." },
+  { icon:"🛒", title:"Сходи в магазин за продуктами для семьи или пожилых родственников", category:"👨‍👩‍👧 Семья", quote:"Забота проявляется в самых простых бытовых мелочах." },
+  { icon:"🎨", title:"Сделай открытку или маленький приятный сюрприз своими руками", category:"🎁 Творчество и тепло", quote:"Подарок, сделанный от души, хранит частичку твоего тепла." },
+  { icon:"♻️", title:"Рассортируй пластик, бумагу и стекло для переработки", category:"🌿 Экология", quote:"Чистая планета начинается с твоего дома." },
+  { icon:"🪑", title:"Помоги дежурным в классе протереть доску или расставить стулья", category:"🎓 Учёба и школа", quote:"Вместе любая работа спорится в два раза быстрее." },
+  { icon:"👵", title:"Помоги бабушке или дедушке разобраться с телефоном или компьютером", category:"👨‍👩‍👧 Семья", quote:"Терпение и внимание — лучший подарок близким." },
+  { icon:"🌟", title:"Скажи три искренних комплимента людям, которых встретишь сегодня", category:"☀️ Доброе слово", quote:"Доброе слово окрыляет человека." },
+  { icon:"🧤", title:"Подними упавшую вещь прохожего и подай ему", category:"🤝 Вежливость", quote:"Неравнодушие делает улицы нашего города добрее." },
+  { icon:"📖", title:"Почитай сказку или интересную историю младшему брату или сестре", category:"👨‍👩‍👧 Семья", quote:"Время, проведённое с младшими, бесценно." },
+  { icon:"❄️", title:"Помоги расчистить дорожку или крыльцо у дома от листьев или снега", category:"🏡 Двор и соседи", quote:"Забота об общем дворе объединяет людей." },
+  { icon:"🛍️", title:"Возьми с собой многоразовую сумку-шоппер вместо пластикового пакета", category:"🌿 Экология", quote:"Маленькая эко-привычка каждый день бережёт природу." },
+  { icon:"🤝", title:"Помирись с тем, с кем был в ссоре, или первым пойди навстречу", category:"💬 Дружба", quote:"Умение прощать — признак по-настоящему сильного сердца." },
+  { icon:"🍎", title:"Поделись перекусом или угощением с другом или одноклассником", category:"🎓 Дружба", quote:"Разделённая радость становится вдвое больше." },
+  { icon:"💡", title:"Проверь и выключи лишний свет и электроприборы в пустых комнатах", category:"🌿 Экология", quote:"Бережное отношение к ресурсам — вклад в будущее." },
+  { icon:"🧺", title:"Развесь постиранное бельё или аккуратно сложи чистую одежду", category:"👨‍👩‍👧 Семья", quote:"Маленькая помощь по дому освобождает вечер для всей семьи." },
+  { icon:"🏥", title:"Узнай, как чувствует себя заболевший одноклассник, и перешли ему конспекты", category:"🎓 Учёба и забота", quote:"Поддержка во время болезни помогает выздороветь быстрее." }
+];
+
+let currentQuestIndex = 0;
+
+function pickRandomQuest(){
+  if(questsPool.length <= 1) return questsPool[0];
+  let nextIdx = currentQuestIndex;
+  while(nextIdx === currentQuestIndex){
+    nextIdx = Math.floor(Math.random() * questsPool.length);
+  }
+  currentQuestIndex = nextIdx;
+  return questsPool[currentQuestIndex];
+}
+
+const shopItems = [
+  { id:"cookie",  icon:"🍪", name:"Печенька",          price:10,  effect:"+15 к сытости и +5 к радости", type:"food" },
+  { id:"bow",     icon:"🎀", name:"Розовый бантик",    price:15,  effect:"Милое украшение на ушко",       type:"decor" },
+  { id:"glasses", icon:"🕶️", name:"Крутые очки",       price:25,  effect:"Стильные очки на мордочку",     type:"decor" },
+  { id:"scarf",   icon:"🧣", name:"Уютный шарфик",     price:35,  effect:"Тёплый шарф вокруг шеи",        type:"decor" },
+  { id:"beret",   icon:"🎨", name:"Французский берет", price:40,  effect:"Стильный берет набок",          type:"decor" },
+  { id:"hat",     icon:"🎩", name:"Шляпа-цилиндр",     price:45,  effect:"Элегантный головной убор",      type:"decor" },
+  { id:"wings",   icon:"🪽", name:"Крылышки добра",    price:60,  effect:"Белоснежные крылья за спиной",  type:"decor" },
+  { id:"meadow",  icon:"🌸", name:"Цветочная полянка", price:75,  effect:"Декор лужайки с цветами",       type:"decor" },
+  { id:"stars",   icon:"✨", name:"Звёздные светлячки",price:90,  effect:"Парящие огоньки вокруг питомца",type:"decor" },
+  { id:"crown",   icon:"👑", name:"Золотая корона",    price:110, effect:"Королевское величие",           type:"decor" }
+];
+
+const friendIcons = ["🌟","🏡","📚","🐈","☕","🤝","🛍️","🚪","🌱"];
+
+const state = {
+  name: "Иван",
+  exp: 10,
+  gems: 50,
+  commonPot: 540,
+  streak: 1,
+  hasDoneDeedToday: false,
+  friends: [
+    { name:"Света", icon:"🏡", exp:120 }
+  ],
+  pet: {
+    species: "cat",
+    name: "Мурзик",
+    hunger: 60,
+    joy: 60,
+    ownedDecor: [],
+    equippedDecor: []
+  }
+};
+
+function selectSpecies(sp){
+  state.pet.species = sp;
+  document.querySelectorAll('.species-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.species === sp);
+  });
+  const nameInput = document.getElementById('input-pet-name');
+  const defaults = Object.values(speciesMeta).map(m => m.defaultName);
+  if(defaults.includes(nameInput.value.trim()) || !nameInput.value.trim()){
+    nameInput.value = speciesMeta[sp].defaultName;
+  }
+}
+
+function openSetupModal(){
+  document.getElementById('input-user-name').value = state.name;
+  document.getElementById('input-pet-name').value = state.pet.name;
+  selectSpecies(state.pet.species);
+  document.getElementById('setup-modal').classList.remove('hidden');
+}
+
+function saveSetup(){
+  const uName = document.getElementById('input-user-name').value.trim();
+  const pName = document.getElementById('input-pet-name').value.trim();
+  if(uName) state.name = uName;
+  if(pName) state.pet.name = pName;
+  document.getElementById('setup-modal').classList.add('hidden');
+  build3DPet();
+  refreshUI();
+  go('start');
+}
+
+function getRank(exp){
+  return ranks.find(r => exp >= r.min && exp <= r.max) || ranks[ranks.length-1];
+}
+function getNextRank(exp){
+  return ranks.find(r => r.min > exp) || null;
+}
+function getPetStage(exp) {
+  let s = petStages[0];
+  for (const st of petStages) {
+    if (exp >= st.min) s = st;
+  }
+  return s;
+}
+function getNextPetStage(exp) {
+  return petStages.find(st => st.min > exp) || null;
+}
+
+let lastStageNum = 1;
+
+function refreshUI(){
+  const r = getRank(state.exp);
+  const next = getNextRank(state.exp);
+  const petStage = getPetStage(state.exp);
+  const nextPetStage = getNextPetStage(state.exp);
+  const spMeta = speciesMeta[state.pet.species];
+
+  if (petStage.stage !== lastStageNum) {
+    lastStageNum = petStage.stage;
+    build3DPet();
+    spawnBurstParticles(0xffd700, 26);
+  }
+
+  document.getElementById('user-name').textContent = state.name;
+  document.getElementById('user-av').textContent = spMeta.icon;
+  document.getElementById('exp-badge').textContent = '⭐ ' + state.exp + ' EXP';
+  document.getElementById('gems-badge').textContent = '💎 ' + state.gems;
+  
+  document.getElementById('stat-exp').textContent = state.exp;
+  document.getElementById('stat-gems').textContent = state.gems;
+  document.getElementById('stat-rank').innerHTML = r.icon + ' ' + r.title;
+  document.getElementById('stat-streak').textContent = state.streak + ' дн.';
+  document.getElementById('user-rank').textContent = r.icon + ' ' + r.title;
+  document.getElementById('pot-num').textContent = state.commonPot;
+
+  if(next){
+    const pct = Math.min(100, state.exp / next.min * 100);
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-hint').textContent =
+      state.exp + ' / ' + next.min + ' EXP — осталось ' + (next.min - state.exp);
+  } else {
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('progress-hint').textContent = 'Максимальный ранг достигнут';
+  }
+
+  const petCard = document.getElementById('pet-card');
+  document.getElementById('pet-name').textContent = state.pet.name + ' (' + spMeta.label + ')';
+  document.getElementById('lvl-text').textContent = petStage.stage + ' / ' + petStages.length;
+
+  if (nextPetStage) {
+    document.getElementById('lvl-exp-text').textContent = state.exp + ' / ' + nextPetStage.min + ' EXP';
+    const progressPct = Math.min(100, ((state.exp - petStage.min) / (nextPetStage.min - petStage.min)) * 100);
+    document.getElementById('lvl-progress-bar').style.width = progressPct + '%';
+  } else {
+    document.getElementById('lvl-exp-text').textContent = 'MAX (' + state.exp + ' EXP)';
+    document.getElementById('lvl-progress-bar').style.width = '100%';
+  }
+  document.getElementById('pet-stage').textContent = 'Уровень ' + petStage.stage + ' · ' + petStage.title;
+  
+  document.getElementById('pet-hunger').style.width = state.pet.hunger + '%';
+  document.getElementById('pet-joy').style.width = state.pet.joy + '%';
+  document.getElementById('pet-hunger-v').textContent = state.pet.hunger + '%';
+  document.getElementById('pet-joy-v').textContent = state.pet.joy + '%';
+
+  const moodEl = document.getElementById('pet-mood');
+  const emoBadge = document.getElementById('emotion-badge');
+
+  if (state.pet.hunger === 0 || state.pet.joy === 0) {
+    petCard.classList.add('is-sad');
+    emoBadge.textContent = '😭 Грустит';
+    if (state.pet.hunger === 0 && state.pet.joy === 0) {
+      moodEl.innerHTML = "😭 Очень голоден и грустит! Купи печеньку в магазине и погладь его.";
+    } else if (state.pet.hunger === 0) {
+      moodEl.innerHTML = "😢 Проголодался! Покорми печенькой (сытость пополняется только едой).";
+    } else {
+      moodEl.innerHTML = "💔 Совсем загрустил... Погладь его или выполни доброе дело!";
+    }
+  } else {
+    petCard.classList.remove('is-sad');
+    if (petStage.isEgg) {
+      emoBadge.textContent = '🥚 Скоро вылупится';
+      moodEl.textContent = 'Покачивается в тёплом гнёздышке. Выполни ещё пару заданий, чтобы малыш вылупился!';
+    } else if(state.pet.hunger < 30) {
+      emoBadge.textContent = '🥺 Хочет кушать';
+      moodEl.textContent = 'Урчит животик — покорми его вкусной печенькой!';
+    } else if(state.pet.joy < 30) {
+      emoBadge.textContent = '😔 Скучает';
+      moodEl.textContent = 'Скучает без внимания, погладь его';
+    } else if(state.pet.hunger >= 75 && state.pet.joy >= 75) {
+      emoBadge.textContent = '🥰 Счастлив';
+      moodEl.textContent = 'Радостно машет лапками и светится от счастья!';
+    } else {
+      emoBadge.textContent = '😊 Доволен';
+      moodEl.textContent = 'С интересом наблюдает за твоими добрыми делами';
+    }
+  }
+
+  update3DEmotionsAndDecor();
+  renderFriends();
+}
+
+function renderFriends(){
+  const box = document.getElementById('friends-list');
+  box.innerHTML = '';
+  
+  let list = [...state.friends, { name: state.name, icon: speciesMeta[state.pet.species].icon, exp: state.exp, isMe: true }];
+  list.sort((a,b) => b.exp - a.exp);
+
+  list.forEach((f, idx) => {
+    const div = document.createElement('div');
+    div.className = 'top-row' + (f.isMe ? ' current' : '');
+    div.innerHTML = `
+      <span class="pos">${idx+1}</span>
+      <span class="av">${f.icon}</span>
+      <span class="name">${f.name}${f.isMe?' ← ты':''}</span>
+      <span class="pts">${f.exp} EXP</span>
+    `;
+    box.appendChild(div);
+  });
+}
+
+function addFriend(){
+  const input = document.getElementById('custom-friend-name');
+  const customName = input.value.trim();
+  if(!customName){
+    input.focus();
+    input.placeholder = "Введи имя друга!";
+    return;
+  }
+  const icon = friendIcons[state.friends.length % friendIcons.length];
+  const friendExp = Math.floor(20 + Math.random() * 400);
+  state.friends.push({
+    name: customName,
+    icon: icon,
+    exp: friendExp
+  });
+  input.value = '';
+  input.placeholder = "Введи имя друга...";
+  refreshUI();
+}
+
+function petPet(){
+  state.pet.joy = Math.min(100, state.pet.joy + 8);
+  triggerJumpReaction(0xff7847);
+  refreshUI();
+}
+
+function petFeed(){
+  if(state.gems < 10) return;
+  state.gems -= 10;
+  state.pet.hunger = Math.min(100, state.pet.hunger + 15);
+  state.pet.joy = Math.min(100, state.pet.joy + 5);
+  triggerJumpReaction(0x22c55e);
+  refreshUI();
+}
+
+function upgradeStageFast(){
+  const nextSt = getNextPetStage(state.exp);
+  if(nextSt){
+    state.exp = nextSt.min;
+  } else {
+    state.exp += 50;
+  }
+  state.gems += 50;
+  state.pet.joy = 100;
+  triggerJumpReaction(0x8b5cf6);
+  refreshUI();
+}
+
+function skipDay() {
+  if (state.hasDoneDeedToday) {
+    state.streak += 1;
+  } else {
+    state.streak = 0;
+  }
+  
+  state.hasDoneDeedToday = false;
+  state.pet.hunger = Math.max(0, state.pet.hunger - 20);
+  state.pet.joy = Math.max(0, state.pet.joy - 20);
+  
+  refreshUI();
+  
+  if (state.pet.hunger === 0 || state.pet.joy === 0) {
+    go('pet_guilt');
+  } else {
+    go('time_passed');
+  }
+}
+
+function showProofWIP(){
+  const banner = document.getElementById('wip-banner');
+  if(banner){
+    banner.classList.add('show');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   3D ПИТОМЕЦ
+   ═══════════════════════════════════════════════════════════ */
+let scene, camera, renderer, petRoot, animalGroup, headGroup, leftEar, rightEar, tailMesh, eggGroup;
+let leftArm, rightArm, leftEyeMesh, rightEyeMesh, tearLeft, tearRight;
+let decorMeshes = {};
+let particles = [];
+let targetRotY = 0;
+let isDragging = false, prevX = 0;
+let jumpVelocity = 0, jumpOffset = 0;
+let idleActionTimer = 0, currentIdleType = 0;
+
+function init3D(){
+  const wrap = document.getElementById('pet-canvas-wrap');
+  const canvas = document.getElementById('pet-canvas');
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(38, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  camera.position.set(0, 1.35, 5.2);
+  camera.lookAt(0, 0.35, 0);
+
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const hemiLight = new THREE.HemisphereLight(0xfffdf9, 0xffd8b8, 0.95);
+  scene.add(hemiLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
+  dirLight.position.set(3, 6, 5);
+  scene.add(dirLight);
+
+  petRoot = new THREE.Group();
+  scene.add(petRoot);
+
+  build3DPet();
+
+  wrap.addEventListener('pointerdown', e => {
+    isDragging = true;
+    prevX = e.clientX;
+  });
+  window.addEventListener('pointermove', e => {
+    if(!isDragging) return;
+    const dx = e.clientX - prevX;
+    prevX = e.clientX;
+    targetRotY += dx * 0.015;
+  });
+  window.addEventListener('pointerup', e => {
+    if(isDragging && Math.abs(e.clientX - prevX) < 3){
+      petPet();
+    }
+    isDragging = false;
+  });
+
+  window.addEventListener('resize', () => {
+    if(!wrap.clientWidth || !wrap.clientHeight) return;
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  });
+
+  animate3D();
+}
+
+function build3DPet(){
+  if(!petRoot) return;
+  while(petRoot.children.length > 0){
+    petRoot.remove(petRoot.children[0]);
+  }
+  decorMeshes = {};
+  leftArm = null;
+  rightArm = null;
+
+  const sp = speciesMeta[state.pet.species];
+  const st = getPetStage(state.exp);
+
+  const matPrimary = new THREE.MeshStandardMaterial({ color: sp.primary, roughness: 0.48 });
+  const matLimb = new THREE.MeshStandardMaterial({ color: sp.limbColor, roughness: 0.48 });
+  const matEarInner = new THREE.MeshStandardMaterial({ color: sp.earInner, roughness: 0.5 });
+  const matDark = new THREE.MeshStandardMaterial({ color: 0x1f1916, roughness: 0.25 });
+  const matNose = new THREE.MeshStandardMaterial({ color: sp.nose, roughness: 0.35 });
+
+  // Подставка / Гнёздышко
+  const nestMat = new THREE.MeshStandardMaterial({ color: 0xd9a066, roughness: 0.8 });
+  const baseDisc = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.5, 0.18, 28), nestMat);
+  baseDisc.position.y = -0.78;
+  petRoot.add(baseDisc);
+
+  // Декор: Цветочная полянка (meadow)
+  const meadowGroup = new THREE.Group();
+  const grassDisk = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.42, 1.48, 0.08, 28),
+    new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.6 })
+  );
+  grassDisk.position.y = -0.68;
+  meadowGroup.add(grassDisk);
+  const flowerColors = [0xf472b6, 0xfacc15, 0x60a5fa, 0xfb7185, 0xc084fc];
+  for(let i=0;i<8;i++){
+    const ang = (i / 8) * Math.PI * 2;
+    const fl = new THREE.Mesh(
+      new THREE.SphereGeometry(0.11, 10, 10),
+      new THREE.MeshStandardMaterial({ color: flowerColors[i % flowerColors.length] })
+    );
+    fl.position.set(Math.cos(ang)*1.18, -0.62, Math.sin(ang)*1.18);
+    meadowGroup.add(fl);
+  }
+  petRoot.add(meadowGroup);
+  decorMeshes.meadow = meadowGroup;
+
+  if (st.isEgg) {
+    // СТАДИЯ 1: ГЛАДКОЕ 3D ЯИЧКО
+    const ringNest = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.2, 12, 28), nestMat);
+    ringNest.rotation.x = Math.PI / 2;
+    ringNest.position.y = -0.62;
+    petRoot.add(ringNest);
+
+    eggGroup = new THREE.Group();
+    eggGroup.position.y = -0.1;
+
+    const eggMat = new THREE.MeshStandardMaterial({ color: 0xfff8ed, roughness: 0.28 });
+    const eggShell = new THREE.Mesh(new THREE.SphereGeometry(0.82, 32, 32), eggMat);
+    eggShell.scale.set(1, 1.32, 1);
+    eggGroup.add(eggShell);
+
+    petRoot.add(eggGroup);
+    animalGroup = eggGroup;
+    headGroup = eggGroup;
+  } else {
+    // СТАДИИ 2–5: ВЫЛУПИВШИЙСЯ И РАСТУЩИЙ ПИТОМЕЦ
+    eggGroup = null;
+    animalGroup = new THREE.Group();
+    const s = st.scale;
+    animalGroup.scale.set(s, s, s);
+    animalGroup.position.y = -0.15 + (s - 0.85) * 0.25;
+    petRoot.add(animalGroup);
+
+    if (st.hasHaloRing) {
+      const halo = new THREE.Mesh(
+        new THREE.TorusGeometry(1.38, 0.035, 12, 40),
+        new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+      );
+      halo.rotation.x = Math.PI / 2;
+      halo.position.y = -0.62;
+      petRoot.add(halo);
+    }
+
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.66, 28, 28), matPrimary);
+    body.scale.set(0.95, 1.05, 0.9);
+    body.position.y = -0.12;
+    animalGroup.add(body);
+
+    // РУЧКИ С ПЛЕЧЕВЫМ ШАРНИРОМ (направлены наружу от тела)
+    leftArm = new THREE.Group();
+    leftArm.position.set(-0.54, 0.14, 0.06);
+    const armMeshL = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.42, 16), matLimb);
+    armMeshL.position.y = -0.18;
+    const handSphereL = new THREE.Mesh(new THREE.SphereGeometry(0.135, 16, 16), matLimb);
+    handSphereL.position.y = -0.39;
+    leftArm.add(armMeshL, handSphereL);
+    leftArm.rotation.z = -0.58;
+    leftArm.rotation.x = 0.22;
+    animalGroup.add(leftArm);
+
+    rightArm = new THREE.Group();
+    rightArm.position.set(0.54, 0.14, 0.06);
+    const armMeshR = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.42, 16), matLimb);
+    armMeshR.position.y = -0.18;
+    const handSphereR = new THREE.Mesh(new THREE.SphereGeometry(0.135, 16, 16), matLimb);
+    handSphereR.position.y = -0.39;
+    rightArm.add(armMeshR, handSphereR);
+    rightArm.rotation.z = 0.58;
+    rightArm.rotation.x = 0.22;
+    animalGroup.add(rightArm);
+
+    // НИЖНИЕ ЛАПКИ (НОЖКИ)
+    const footMeshL = new THREE.Mesh(new THREE.SphereGeometry(0.21, 16, 16), matLimb);
+    footMeshL.scale.set(0.95, 0.72, 1.22);
+    footMeshL.position.set(-0.35, -0.58, 0.32);
+    animalGroup.add(footMeshL);
+
+    const footMeshR = new THREE.Mesh(new THREE.SphereGeometry(0.21, 16, 16), matLimb);
+    footMeshR.scale.set(0.95, 0.72, 1.22);
+    footMeshR.position.set(0.35, -0.58, 0.32);
+    animalGroup.add(footMeshR);
+
+    // Хвостик
+    const tailGeo = state.pet.species === 'bunny'
+      ? new THREE.SphereGeometry(0.21, 14, 14)
+      : new THREE.CylinderGeometry(0.08, 0.15, 0.62, 14);
+    tailMesh = new THREE.Mesh(tailGeo, matPrimary);
+    tailMesh.position.set(0, -0.25, -0.62);
+    if(state.pet.species !== 'bunny') tailMesh.rotation.x = -0.8;
+    animalGroup.add(tailMesh);
+
+    // Голова
+    headGroup = new THREE.Group();
+    const headRatio = st.stage === 2 ? 1.18 : (st.stage === 3 ? 1.06 : 1.0);
+    headGroup.scale.set(headRatio, headRatio, headRatio);
+    headGroup.position.set(0, 0.66, 0.08);
+    animalGroup.add(headGroup);
+
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.68, 28, 28), matPrimary);
+    headMesh.scale.set(1.06, 0.96, 0.98);
+    headGroup.add(headMesh);
+
+    // Мордочка
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(0.24, 18, 18), matPrimary);
+    snout.scale.set(1.08, 0.75, 0.65);
+    snout.position.set(0, -0.11, 0.56);
+    headGroup.add(snout);
+
+    // Носик
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 14), matNose);
+    nose.scale.set(1.2, 0.85, 0.8);
+    nose.position.set(0, -0.05, 0.72);
+    headGroup.add(nose);
+
+    // Глаза
+    const eyeGeo = new THREE.SphereGeometry(0.105, 16, 16);
+    leftEyeMesh = new THREE.Mesh(eyeGeo, matDark);
+    leftEyeMesh.position.set(-0.26, 0.08, 0.58);
+    headGroup.add(leftEyeMesh);
+
+    rightEyeMesh = new THREE.Mesh(eyeGeo, matDark);
+    rightEyeMesh.position.set(0.26, 0.08, 0.58);
+    headGroup.add(rightEyeMesh);
+
+    if(state.pet.species === 'panda'){
+      const patchGeo = new THREE.SphereGeometry(0.17, 14, 14);
+      const lp = new THREE.Mesh(patchGeo, matLimb);
+      lp.scale.set(1.1, 1.3, 0.4);
+      lp.position.set(-0.27, 0.08, 0.52);
+      headGroup.add(lp);
+      const rp = lp.clone();
+      rp.position.x = 0.27;
+      headGroup.add(rp);
+    }
+
+    // Слезинки
+    const tearMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2 });
+    tearLeft = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 10), tearMat);
+    tearLeft.position.set(-0.28, -0.06, 0.64);
+    tearLeft.visible = false;
+    headGroup.add(tearLeft);
+
+    tearRight = tearLeft.clone();
+    tearRight.position.x = 0.28;
+    tearRight.visible = false;
+    headGroup.add(tearRight);
+
+    // Ушки
+    leftEar = new THREE.Group();
+    rightEar = new THREE.Group();
+    if(state.pet.species === 'bunny'){
+      const earOuter = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.75, 16), matPrimary);
+      const earIn = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.65, 12), matEarInner);
+      earIn.position.z = 0.07;
+      leftEar.add(earOuter, earIn);
+      rightEar = leftEar.clone();
+      leftEar.position.set(-0.28, 0.78, 0);
+      rightEar.position.set(0.28, 0.78, 0);
+    } else if(state.pet.species === 'panda' || state.pet.species === 'dog'){
+      const earMesh = new THREE.Mesh(new THREE.SphereGeometry(0.23, 16, 16), state.pet.species === 'panda' ? matLimb : matEarInner);
+      leftEar.add(earMesh);
+      rightEar = leftEar.clone();
+      leftEar.position.set(-0.48, 0.52, 0);
+      rightEar.position.set(0.48, 0.52, 0);
+    } else {
+      const coneOuter = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.52, 16), matPrimary);
+      const coneInner = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.38, 12), matEarInner);
+      coneInner.position.set(0, -0.02, 0.09);
+      leftEar.add(coneOuter, coneInner);
+      rightEar = leftEar.clone();
+      leftEar.position.set(-0.42, 0.58, 0);
+      leftEar.rotation.z = 0.32;
+      rightEar.position.set(0.42, 0.58, 0);
+      rightEar.rotation.z = -0.32;
+    }
+    headGroup.add(leftEar, rightEar);
+  }
+
+  // СОЗДАНИЕ ВСЕХ ЭЛЕМЕНТОВ ДЕКОРА
+  const topY = st.isEgg ? 0.92 : 0.68;
+
+  // 1. Бантик (bow)
+  const bowGroup = new THREE.Group();
+  const bowMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.35 });
+  const bLeft = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.28, 12), bowMat);
+  bLeft.rotation.z = -Math.PI / 2;
+  bLeft.position.x = -0.12;
+  const bRight = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.28, 12), bowMat);
+  bRight.rotation.z = Math.PI / 2;
+  bRight.position.x = 0.12;
+  const bCenter = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), bowMat);
+  bowGroup.add(bLeft, bRight, bCenter);
+  bowGroup.position.set(0.38, topY - 0.1, 0.28);
+  bowGroup.rotation.z = -0.25;
+  headGroup.add(bowGroup);
+  decorMeshes.bow = bowGroup;
+
+  // 2. Очки (glasses)
+  const glassesGroup = new THREE.Group();
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.6, roughness: 0.2 });
+  const gLeft = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.05, 16), glassMat);
+  gLeft.rotation.x = Math.PI / 2;
+  gLeft.position.set(-0.26, 0.08, 0.68);
+  const gRight = gLeft.clone();
+  gRight.position.x = 0.26;
+  const gBridge = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.04), glassMat);
+  gBridge.position.set(0, 0.1, 0.68);
+  glassesGroup.add(gLeft, gRight, gBridge);
+  if(st.isEgg) glassesGroup.position.set(0, 0.15, 0.16);
+  headGroup.add(glassesGroup);
+  decorMeshes.glasses = glassesGroup;
+
+  // 3. Шарфик (scarf)
+  const scarfGroup = new THREE.Group();
+  const scarfMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.6 });
+  const scarfRing = new THREE.Mesh(new THREE.TorusGeometry(st.isEgg ? 0.68 : 0.48, 0.11, 14, 28), scarfMat);
+  scarfRing.rotation.x = Math.PI / 2;
+  const scarfTail = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.42, 0.08), scarfMat);
+  scarfTail.position.set(0.26, -0.2, 0.45);
+  scarfTail.rotation.z = 0.15;
+  scarfGroup.add(scarfRing, scarfTail);
+  scarfGroup.position.set(0, st.isEgg ? -0.2 : 0.26, 0);
+  animalGroup.add(scarfGroup);
+  decorMeshes.scarf = scarfGroup;
+
+  // 4. Косметический французский берет (beret)
+  const beretGroup = new THREE.Group();
+  const beretMat = new THREE.MeshStandardMaterial({ color: 0xbe123c, roughness: 0.65 });
+  const beretBandMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5 });
+  const beretBand = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.34, 0.07, 24), beretBandMat);
+  const beretTop = new THREE.Mesh(new THREE.SphereGeometry(0.44, 24, 18), beretMat);
+  beretTop.scale.set(1.08, 0.38, 1.05);
+  beretTop.position.set(0.06, 0.09, 0);
+  const beretStem = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.11, 8), beretMat);
+  beretStem.position.set(0.06, 0.25, 0);
+  beretStem.rotation.z = -0.2;
+  beretGroup.add(beretBand, beretTop, beretStem);
+  beretGroup.position.set(-0.08, topY - 0.02, 0.05);
+  beretGroup.rotation.z = 0.22;
+  beretGroup.rotation.x = -0.1;
+  headGroup.add(beretGroup);
+  decorMeshes.beret = beretGroup;
+
+  // 5. Шляпа-цилиндр (hat)
+  const hatGroup = new THREE.Group();
+  const hatMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.4 });
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 22), hatMat);
+  const topCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.26, 0.44, 22), hatMat);
+  topCyl.position.y = 0.24;
+  const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.08, 22), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+  ribbon.position.y = 0.08;
+  hatGroup.add(brim, topCyl, ribbon);
+  hatGroup.position.set(0, topY, 0);
+  headGroup.add(hatGroup);
+  decorMeshes.hat = hatGroup;
+
+  // 6. Крылышки (wings)
+  const wingsGroup = new THREE.Group();
+  const wingMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+  const wLeft = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 16), wingMat);
+  wLeft.scale.set(0.3, 1.15, 0.65);
+  wLeft.position.set(-0.62, 0.1, -0.35);
+  wLeft.rotation.z = 0.45;
+  const wRight = wLeft.clone();
+  wRight.position.x = 0.62;
+  wRight.rotation.z = -0.45;
+  wingsGroup.add(wLeft, wRight);
+  animalGroup.add(wingsGroup);
+  decorMeshes.wings = wingsGroup;
+
+  // 7. Звёздные светлячки (stars)
+  const starsGroup = new THREE.Group();
+  const starMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+  for(let i=0;i<6;i++){
+    const stOrb = new THREE.Mesh(new THREE.OctahedronGeometry(0.09, 0), starMat);
+    const a = (i / 6) * Math.PI * 2;
+    stOrb.position.set(Math.cos(a)*1.15, 0.2 + (i%2)*0.45, Math.sin(a)*1.15);
+    starsGroup.add(stOrb);
+  }
+  petRoot.add(starsGroup);
+  decorMeshes.stars = starsGroup;
+
+  // 8. Корона (crown)
+  const crownGroup = new THREE.Group();
+  const goldMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.65, roughness: 0.25 });
+  const cBase = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.24, 0.22, 18), goldMat);
+  crownGroup.add(cBase);
+  for(let i=0;i<5;i++){
+    const a = (i / 5) * Math.PI * 2;
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 8), goldMat);
+    spike.position.set(Math.cos(a)*0.24, 0.16, Math.sin(a)*0.24);
+    crownGroup.add(spike);
+  }
+  crownGroup.position.set(0, topY + 0.04, 0);
+  headGroup.add(crownGroup);
+  decorMeshes.crown = crownGroup;
+
+  update3DEmotionsAndDecor();
+}
+
+function update3DEmotionsAndDecor(){
+  const activeIds = state.pet.equippedDecor;
+  Object.keys(decorMeshes).forEach(k => {
+    if(decorMeshes[k]) decorMeshes[k].visible = activeIds.includes(k);
+  });
+
+  const isSad = state.pet.hunger === 0 || state.pet.joy === 0;
+  if(tearLeft && tearRight){
+    tearLeft.visible = isSad;
+    tearRight.visible = isSad;
+  }
+}
+
+function triggerJumpReaction(colorHex){
+  jumpVelocity = 0.11;
+  spawnBurstParticles(colorHex, 14);
+}
+
+function spawnBurstParticles(colorHex, count){
+  if(!scene) return;
+  const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+  for(let i=0;i<count;i++){
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), mat);
+    p.position.set(
+      (Math.random()-0.5)*0.8,
+      0.3 + Math.random()*0.6,
+      (Math.random()-0.5)*0.8
+    );
+    p.userData = {
+      vx: (Math.random()-0.5)*0.05,
+      vy: 0.02 + Math.random()*0.05,
+      vz: (Math.random()-0.5)*0.05,
+      life: 40
+    };
+    scene.add(p);
+    particles.push(p);
+  }
+}
+
+function animate3D(){
+  requestAnimationFrame(animate3D);
+  const t = performance.now() * 0.001;
+  const isSad = state.pet.hunger === 0 || state.pet.joy === 0;
+
+  if(petRoot){
+    petRoot.rotation.y += (targetRotY - petRoot.rotation.y) * 0.1;
+
+    if(jumpVelocity !== 0 || jumpOffset > 0){
+      jumpOffset += jumpVelocity;
+      jumpVelocity -= 0.008;
+      if(jumpOffset <= 0){
+        jumpOffset = 0;
+        jumpVelocity = 0;
+      }
+    }
+    petRoot.position.y = jumpOffset;
+  }
+
+  idleActionTimer -= 0.016;
+  if(idleActionTimer <= 0){
+    idleActionTimer = 3 + Math.random() * 4;
+    currentIdleType = Math.floor(Math.random() * 3);
+  }
+
+  if(eggGroup){
+    const speed = isSad ? 1.2 : 3.2;
+    eggGroup.rotation.z = Math.sin(t * speed) * (isSad ? 0.04 : 0.12);
+    eggGroup.position.y = -0.1 + Math.abs(Math.sin(t * 2.2)) * 0.05;
+  } else if(animalGroup && headGroup){
+    const breath = 1 + Math.sin(t * 2.5) * 0.025;
+    const baseScale = getPetStage(state.exp).scale;
+    animalGroup.scale.set(baseScale, baseScale * breath, baseScale);
+
+    if(isSad){
+      headGroup.rotation.x = 0.28;
+      headGroup.rotation.z = Math.sin(t * 1.5) * 0.05;
+    } else {
+      headGroup.rotation.x = Math.sin(t * 1.8) * 0.06;
+      if(currentIdleType === 1){
+        headGroup.rotation.z = Math.sin(t * 3.5) * 0.14;
+      } else {
+        headGroup.rotation.z = Math.sin(t * 1.2) * 0.05;
+      }
+    }
+
+    if(leftArm && rightArm){
+      if(isSad){
+        leftArm.rotation.z = -0.32;
+        rightArm.rotation.z = 0.32;
+      } else {
+        leftArm.rotation.z = -0.58 - Math.sin(t * 3.0) * 0.14;
+        rightArm.rotation.z = 0.58 + Math.sin(t * 3.0 + 1.2) * 0.14;
+      }
+    }
+
+    if(leftEyeMesh && rightEyeMesh){
+      const blink = (Math.sin(t * 1.7) > 0.96) ? 0.12 : 1.0;
+      leftEyeMesh.scale.y = blink;
+      rightEyeMesh.scale.y = blink;
+    }
+
+    if(leftEar && rightEar){
+      leftEar.rotation.x = Math.sin(t * 3.2) * 0.08;
+      rightEar.rotation.x = -Math.sin(t * 3.2) * 0.08;
+    }
+    if(tailMesh){
+      tailMesh.rotation.z = Math.sin(t * (isSad ? 1.5 : 5.5)) * (isSad ? 0.08 : 0.28);
+    }
+  }
+
+  if(decorMeshes.stars && decorMeshes.stars.visible){
+    decorMeshes.stars.rotation.y = t * 0.9;
+  }
+
+  for(let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    p.position.x += p.userData.vx;
+    p.position.y += p.userData.vy;
+    p.position.z += p.userData.vz;
+    p.userData.life--;
+    p.scale.multiplyScalar(0.96);
+    if(p.userData.life <= 0){
+      scene.remove(p);
+      particles.splice(i, 1);
+    }
+  }
+
+  if(renderer && scene && camera){
+    renderer.render(scene, camera);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ЭКРАНЫ
+   ═══════════════════════════════════════════════════════════ */
+const screens = {
+  start: {
+    message: () => `
+      <div class="card">
+        <h2>🧡 Копилка добра</h2>
+        <div class="subtitle">Привет, ${state.name}! ✨</div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="stat"><span class="k">⭐ Опыт</span><span class="v">${state.exp}</span></div>
+        <div class="stat"><span class="k">💎 Алмазы</span><span class="v">${state.gems}</span></div>
+        <div class="stat"><span class="k">${getRank(state.exp).icon} Ранг</span><span class="v">${getRank(state.exp).title}</span></div>
+        <div class="stat"><span class="k">🐾 Питомец (${state.pet.name})</span><span class="v">${getPetStage(state.exp).title}</span></div>
+        <div class="stat"><span class="k">🧥 Аксессуаров надето</span><span class="v">${state.pet.equippedDecor.length}</span></div>
+        <div class="stat"><span class="k">🌍 Общая копилка</span><span class="v">${state.commonPot}</span></div>
+      </div>
+      <div class="quote">Милосердие — это не подвиг.<br>Это маленькое конкретное дело.</div>
+    `,
+    buttons: [
+      {label:"🎯 Получить задание", action:"quest", kind:"primary"},
+      {label:"🛒 Магазин добра", action:"shop"},
+      {label:"🧥 Гардероб питомца", action:"wardrobe"},
+      {label:"📈 Ранги", action:"ranks"},
+      {label:"ℹ️ О проекте", action:"about"}
+    ]
+  },
+  
+  time_passed: {
+    message: () => `
+      <div class="card">
+        <h2>📅 Прошёл день</h2>
+        <div class="subtitle">${state.pet.name} ждал тебя...</div>
+      </div>
+      <div class="divider"></div>
+      <p class="centered">Показатели сытости и радости снизились на 20%. Не забывай кормить питомца печеньками и радовать добрыми делами!</p>
+      <div class="quote">Стрик сохраняется, если делать хотя бы одно доброе дело в день.</div>
+    `,
+    buttons: [
+      {label:"🎯 Сделать доброе дело", action:"quest", kind:"primary"},
+      {label:"🛒 Купить печеньку", action:"shop"},
+      {label:"↩️ В меню", action:"back", kind:"ghost"}
+    ]
+  },
+
+  pet_guilt: {
+    message: () => `
+      <div class="card warning">
+        <h2>😭 Питомцу (${state.pet.name}) очень плохо!</h2>
+        <div class="subtitle">Показатели упали до нуля</div>
+      </div>
+      <div class="divider"></div>
+      <p class="centered" style="color:var(--warn);font-weight:600">Малыш грустит и плачет.<br>Сытость восстанавливается кормлением, а радость — заботой и добрыми делами!</p>
+      <div class="card">
+        <div class="stat"><span class="k">Сытость</span><span class="v" style="color:var(--warn)">${state.pet.hunger}%</span></div>
+        <div class="stat"><span class="k">Радость</span><span class="v" style="color:var(--warn)">${state.pet.joy}%</span></div>
+      </div>
+      <div class="quote">Покорми питомца и сделай доброе дело!</div>
+    `,
+    buttons: [
+      {label:"🎯 Срочно сделать доброе дело", action:"quest", kind:"primary"},
+      {label:"🛒 Купить печеньку", action:"shop"},
+      {label:"↩️ В меню", action:"back", kind:"ghost"}
+    ]
+  },
+
+  quest: {
+    message: () => {
+      const q = pickRandomQuest();
+      return `
+        <div class="card">
+          <h2>🎯 Задание добра</h2>
+          <div class="subtitle">Подобрано специально для тебя</div>
+        </div>
+        <div class="divider"></div>
+        <div class="card">
+          <div class="icon-big">${q.icon}</div>
+          <div class="title">${q.title}</div>
+          <div class="meta">Категория: ${q.category}</div>
+          <div class="meta">⭐ Награда: +10 EXP (рост питомца)</div>
+          <div class="meta">💎 Награда: +5 Алмазов</div>
+        </div>
+        <div class="proof-box">
+          <div class="proof-lbl">📸 Подтверждение выполнения <span>*</span></div>
+          <div style="font-size:11.5px;color:var(--muted)">Прикрепите фотографию выполненного доброго дела</div>
+          <div class="wip-banner" id="wip-banner">🚧 Work In Progress</div>
+        </div>
+        <div class="quote">${q.quote}</div>
+      `;
+    },
+    buttons: [
+      {label:"📎 Доказать выполнение * (Прикрепить фото)", action:"proof_wip", kind:"proof"},
+      {label:"✅ Выполнено", action:"done", kind:"primary"},
+      {label:"🔁 Другое задание", action:"quest"},
+      {label:"↩️ Отмена", action:"back", kind:"ghost"}
+    ]
+  },
+
+  done: {
+    message: () => `
+      <div class="card success">
+        <h2>✅ Дело засчитано</h2>
+        <div class="subtitle">Спасибо, ${state.name}. Ты делаешь мир теплее 🧡</div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="label">Награда</div>
+        <div class="reward">⭐ +10 Опыта (EXP) — питомец растёт!</div>
+        <div class="reward">💎 +5 Алмазов</div>
+        <div class="reward">🌍 +1 в общую копилку</div>
+        <div class="reward">💛 ${state.pet.name} радуется (+10 Радость)</div>
+      </div>
+      <div class="card">
+        <div class="label">Твой профиль</div>
+        <div class="stat"><span class="k">⭐ Опыт</span><span class="v">${state.exp}</span></div>
+        <div class="stat"><span class="k">💎 Алмазы</span><span class="v">${state.gems}</span></div>
+        <div class="stat"><span class="k">🐾 Стадия питомца</span><span class="v">${getPetStage(state.exp).title}</span></div>
+      </div>
+    `,
+    buttons: [
+      {label:"🎯 Ещё задание", action:"quest", kind:"primary"},
+      {label:"🛒 В магазин декора", action:"shop"},
+      {label:"🧥 В гардероб", action:"wardrobe"},
+      {label:"↩️ В меню", action:"back", kind:"ghost"}
+    ]
+  },
+
+  shop: {
+    message: () => {
+      let itemsHtml = '';
+      shopItems.forEach(item => {
+        const isOwned = item.type === 'decor' && state.pet.ownedDecor.includes(item.id);
+        const isEquipped = item.type === 'decor' && state.pet.equippedDecor.includes(item.id);
+        let badgeHtml = `<span class="p">💎 ${item.price}</span>`;
+        if(isOwned){
+          badgeHtml = isEquipped
+            ? `<span class="owned">✓ Надето</span>`
+            : `<span class="unequipped">В гардеробе</span>`;
+        }
+        itemsHtml += `
+          <div class="product-row">
+            <span class="i">${item.icon}</span>
+            <div class="info">
+              <div class="nm">${item.name}</div>
+              <div class="ef">${item.effect}</div>
+            </div>
+            ${badgeHtml}
+          </div>
+        `;
+      });
+      return `
+        <div class="card">
+          <h2>🛒 Магазин добра и декора</h2>
+          <div class="subtitle">💎 Твои алмазы: ${state.gems}</div>
+        </div>
+        <div class="divider"></div>
+        ${itemsHtml}
+        <div class="quote">Купленные украшения попадают в Гардероб — там их можно надевать и снимать в любой момент!</div>
+      `;
+    },
+    buttons: () => {
+      const btns = [{label:"🧥 Открыть гардероб (Надеть / Снять)", action:"wardrobe", kind:"primary"}];
+      shopItems.forEach(item => {
+        const isOwned = item.type === 'decor' && state.pet.ownedDecor.includes(item.id);
+        if(!isOwned){
+          btns.push({
+            label: `${item.icon} Купить «${item.name}» · 💎 ${item.price}`,
+            action: `buy_${item.id}`
+          });
+        }
+      });
+      btns.push({label:"↩️ Назад", action:"back", kind:"ghost"});
+      return btns;
+    }
+  },
+
+  shop_buy: {
+    message: () => `
+      <div class="card success">
+        <h2>✅ Покупка совершена</h2>
+        <div class="subtitle">Предмет добавлен и сразу применён к питомцу!</div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="label">Остаток</div>
+        <div class="stat"><span class="k">Алмазы</span><span class="v">💎 ${state.gems}</span></div>
+      </div>
+      <div class="quote">Управлять всеми купленными украшениями можно в разделе «Гардероб».</div>
+    `,
+    buttons: [
+      {label:"🧥 Перейти в гардероб", action:"wardrobe", kind:"primary"},
+      {label:"🛒 Продолжить покупки", action:"shop"},
+      {label:"↩️ В меню", action:"back", kind:"ghost"}
+    ]
+  },
+
+  wardrobe: {
+    message: () => {
+      const decorList = shopItems.filter(i => i.type === 'decor');
+      const ownedList = decorList.filter(i => state.pet.ownedDecor.includes(i.id));
+
+      let listHtml = '';
+      if(ownedList.length === 0){
+        listHtml = `
+          <div class="card">
+            <div class="centered" style="color:var(--muted);padding:12px 0">
+              В гардеробе пока пусто.<br>Загляни в Магазин добра, чтобы приобрести первые аксессуары и декор для ${state.pet.name}!
+            </div>
+          </div>
+        `;
+      } else {
+        ownedList.forEach(item => {
+          const isEq = state.pet.equippedDecor.includes(item.id);
+          listHtml += `
+            <div class="product-row">
+              <span class="i">${item.icon}</span>
+              <div class="info">
+                <div class="nm">${item.name}</div>
+                <div class="ef">${item.effect}</div>
+              </div>
+              ${isEq ? `<span class="owned">🟢 Надето</span>` : `<span class="unequipped">⚪ Снято</span>`}
+            </div>
+          `;
+        });
+      }
+
+      return `
+        <div class="card">
+          <h2>🧥 Гардероб питомца (${state.pet.name})</h2>
+          <div class="subtitle">Управление украшениями и аксессуарами</div>
+        </div>
+        <div class="divider"></div>
+        ${listHtml}
+        <div class="quote">Нажимай на кнопки ниже, чтобы мгновенно надевать или снимать любые аксессуары и элементы декора!</div>
+      `;
+    },
+    buttons: () => {
+      const decorList = shopItems.filter(i => i.type === 'decor');
+      const ownedList = decorList.filter(i => state.pet.ownedDecor.includes(i.id));
+      const btns = [];
+
+      ownedList.forEach(item => {
+        const isEq = state.pet.equippedDecor.includes(item.id);
+        btns.push({
+          label: isEq ? `❌ Снять «${item.name}» (${item.icon})` : `✅ Надеть «${item.name}» (${item.icon})`,
+          action: `toggle_decor_${item.id}`,
+          kind: isEq ? "" : "primary"
+        });
+      });
+
+      if(state.pet.equippedDecor.length > 0){
+        btns.push({
+          label: "🧹 Снять все аксессуары",
+          action: "unequip_all_decor"
+        });
+      }
+      if(ownedList.length > state.pet.equippedDecor.length){
+        btns.push({
+          label: "✨ Надеть всё купленное",
+          action: "equip_all_decor"
+        });
+      }
+
+      btns.push({label:"🛒 В магазин за новыми украшениями", action:"shop"});
+      btns.push({label:"↩️ В меню", action:"back", kind:"ghost"});
+      return btns;
+    }
+  },
+
+  ranks: {
+    message: () => {
+      let rows = '';
+      ranks.forEach(r => {
+        const cur = state.exp >= r.min && state.exp <= r.max;
+        rows += `<div class="deed-row" ${cur?'style="background:#fff7ec;border-radius:10px;padding-left:10px;font-weight:700"':''}>
+          <span class="i">${r.icon}</span>
+          <span class="n">${r.title}</span>
+          <span class="c">${r.min}–${r.max === 99999 ? '∞' : r.max}</span>
+        </div>`;
+      });
+      return `
+        <div class="card">
+          <h2>📈 Ранги добра и стадии роста</h2>
+          <div class="subtitle">Основаны на Опыте (EXP)</div>
+        </div>
+        <div class="divider"></div>
+        <div class="card">
+          <div class="label">Стадии развития питомца</div>
+          <div class="stat"><span class="k">🥚 Уровень 1 (0–29 EXP)</span><span class="v">В яичке</span></div>
+          <div class="stat"><span class="k">🐣 Уровень 2 (30–69 EXP)</span><span class="v">Вылупился · Малыш</span></div>
+          <div class="stat"><span class="k">🌱 Уровень 3 (70–129 EXP)</span><span class="v">Подросток</span></div>
+          <div class="stat"><span class="k">🌟 Уровень 4 (130–209 EXP)</span><span class="v">Взрослый питомец</span></div>
+          <div class="stat"><span class="k">👑 Уровень 5 (210+ EXP)</span><span class="v">Могучий Хранитель</span></div>
+        </div>
+        <div class="divider"></div>
+        ${rows}
+      `;
+    },
+    buttons: [{label:"↩️ В меню", action:"back", kind:"ghost"}]
+  },
+
+  about: {
+    message: () => `
+      <div class="card">
+        <h2>ℹ️ О проекте</h2>
+        <div class="subtitle">Ценность: Милосердие</div>
+      </div>
+      <div class="divider"></div>
+      <div class="centered">Милосердие — это не громкие слова.<br>Это маленькие конкретные дела:</div>
+      <div class="card">
+        <div style="padding:4px 0">📞 позвонить бабушке</div>
+        <div style="padding:4px 0">🐈 покормить дворового кота</div>
+        <div style="padding:4px 0">🚪 придержать дверь</div>
+        <div style="padding:4px 0">🤝 помочь соседу</div>
+      </div>
+      <div class="quote">Игра — только форма.<br>Смысл — в делах.</div>
+    `,
+    buttons: [{label:"↩️ В меню", action:"back", kind:"ghost"}]
+  }
+};
+
+const chat = document.getElementById('chat');
+
+function go(id){
+  const screen = screens[id];
+  if(!screen) return;
+  chat.innerHTML = '';
+  renderScreen(screen);
+}
+
+function renderScreen(screen){
+  const msg = document.createElement('div');
+  msg.className = 'bubble';
+  msg.innerHTML = screen.message();
+  chat.appendChild(msg);
+
+  const btnList = typeof screen.buttons === 'function' ? screen.buttons() : screen.buttons;
+  if(btnList && btnList.length){
+    const box = document.createElement('div');
+    box.className = 'actions';
+    btnList.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'btn' + (b.kind ? ' ' + b.kind : '');
+      btn.textContent = b.label;
+      btn.onclick = () => handleAction(b.action);
+      box.appendChild(btn);
+    });
+    chat.appendChild(box);
+  }
+  chat.scrollTop = 0;
+}
+
+function handleAction(action){
+  if(action === 'proof_wip'){
+    showProofWIP();
+    return;
+  }
+
+  if(action === 'back'){ go('start'); return; }
+
+  if(action === 'done'){
+    state.exp += 10;
+    state.gems += 5;
+    state.commonPot += 1;
+    state.hasDoneDeedToday = true;
+    
+    state.pet.joy = Math.min(100, state.pet.joy + 10);
+
+    triggerJumpReaction(0x8b5cf6);
+    refreshUI();
+    go('done');
+    return;
+  }
+
+  if(action.startsWith('toggle_decor_')){
+    const decorId = action.replace('toggle_decor_', '');
+    const idx = state.pet.equippedDecor.indexOf(decorId);
+    if(idx >= 0){
+      state.pet.equippedDecor.splice(idx, 1);
+    } else if(state.pet.ownedDecor.includes(decorId)){
+      state.pet.equippedDecor.push(decorId);
+      triggerJumpReaction(0x0ea5e9);
+    }
+    refreshUI();
+    go('wardrobe');
+    return;
+  }
+
+  if(action === 'unequip_all_decor'){
+    state.pet.equippedDecor = [];
+    refreshUI();
+    go('wardrobe');
+    return;
+  }
+
+  if(action === 'equip_all_decor'){
+    state.pet.equippedDecor = [...state.pet.ownedDecor];
+    triggerJumpReaction(0x0ea5e9);
+    refreshUI();
+    go('wardrobe');
+    return;
+  }
+
+  if(action.startsWith('buy_')){
+    const itemId = action.replace('buy_', '');
+    const item = shopItems.find(i => i.id === itemId);
+
+    if(item && state.gems >= item.price){
+      state.gems -= item.price;
+      
+      if(item.type === 'food'){
+        state.pet.hunger = Math.min(100, state.pet.hunger + 15);
+        state.pet.joy = Math.min(100, state.pet.joy + 5);
+      } else if(item.type === 'decor'){
+        if(!state.pet.ownedDecor.includes(item.id)){
+          state.pet.ownedDecor.push(item.id);
+        }
+        if(!state.pet.equippedDecor.includes(item.id)){
+          state.pet.equippedDecor.push(item.id);
+        }
+        state.pet.joy = Math.min(100, state.pet.joy + 15);
+      }
+      triggerJumpReaction(0x0ea5e9);
+      refreshUI();
+      go('shop_buy');
+    }
+    return;
+  }
+
+  go(action);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  init3D();
+  refreshUI();
+  go('start');
+});
+</script>
+</body>
+</html>
